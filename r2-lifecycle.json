@@ -4,7 +4,9 @@
       "id": "delete-temporary-images",
       "enabled": true,
       "conditions": { "prefix": "temporary/" },
-      "deleteObjectsTransition": { "condition": { "type": "Age", "maxAge": 86400 } }
+      "deleteObjectsTransition": {
+        "condition": { "type": "Age", "maxAge": 600 }
+      }
     }
   ]
 }
