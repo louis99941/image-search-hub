@@ -2,20 +2,14 @@ export const bing = {
   id: 'bing',
   name: 'Bing Visual Search',
   badge: '核心',
-  description: 'Bing 視覺搜尋，可使用圖片 URL 搜尋相似圖片與來源。',
+  description: 'Bing 視覺搜尋；使用圖片 URL 直接進入以圖搜圖。',
   mode: 'url',
   buildUrl(imageUrl) {
-    if (!imageUrl) return 'https://www.bing.com/visualsearch?mkt=en-US';
-    const params = new URLSearchParams({
-      FORM: 'IRSBIQ',
-      cbir: 'sbi',
-      iss: 'sbi',
-      mkt: 'en-US',
-      imgurl: imageUrl,
-    });
-    return `https://www.bing.com/images/searchbyimage?${params.toString()}`;
+    if (!imageUrl) return 'https://www.bing.com/visualsearch';
+    const q = `imgurl:${imageUrl}`;
+    return `https://www.bing.com/images/search?view=detailv2&iss=sbi&form=SBIVSP&sbisrc=UrlPaste&q=${encodeURIComponent(q)}`;
   },
   buildManualUrl() {
-    return 'https://www.bing.com/visualsearch?mkt=en-US';
-  },
+    return 'https://www.bing.com/visualsearch';
+  }
 };
