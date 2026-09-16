@@ -7,7 +7,7 @@ export const bing = {
   buildUrl(imageUrl) {
     if (!imageUrl) return 'https://www.bing.com/visualsearch';
     const q = `imgurl:${imageUrl}`;
-    return `https://www.bing.com/images/search?view=detailv2&iss=sbi&form=SBIVSP&sbisrc=UrlPaste&q=${encodeURIComponent(q)}`;
+    return `https://www.bing.com/images/search?view=detailv2&iss=sbi&FORM=SBIIDP&sbisrc=UrlPaste&idpbck=1&q=${encodeURIComponent(q)}`;
   },
   buildManualUrl() {
     return 'https://www.bing.com/visualsearch';
