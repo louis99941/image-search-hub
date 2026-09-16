@@ -13,11 +13,14 @@ import { tracemoe } from './tracemoe.js';
 import { animetrace } from './animetrace.js';
 import { pinterest } from './pinterest.js';
 import { pimeyes } from './pimeyes.js';
+import { facecheck } from './facecheck.js';
 import { shutterstock } from './shutterstock.js';
 
 export const engines = [
-  google, bing, yandex, tineye, sogou, baidu, lenso, copyseeker,
-  saucenao, iqdb, ascii2d, tracemoe, animetrace, pinterest, pimeyes, shutterstock
+  pimeyes, facecheck,
+  google, yandex, tineye, lenso, copyseeker,
+  baidu, sogou, bing,
+  saucenao, iqdb, ascii2d, tracemoe, animetrace, pinterest, shutterstock
 ];
 
 export function selectedEngines(ids) {
