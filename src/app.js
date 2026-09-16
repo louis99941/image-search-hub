@@ -29,8 +29,26 @@ function showWindowError(targetWindow, message) { if (!targetWindow || targetWin
 function escapeHtml(value) { return String(value).replace(/[&<>'"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' })[c]); }
 async function buildEngineUrl(engine) { if (engine.mode !== 'url') return { url: engine.buildManualUrl(), method: 'manual' }; const source = await ensureRemoteUrl(); if (!source) throw new Error('沒有可用的圖片 URL。'); return { url: engine.buildUrl(source), method: 'url' }; }
 async function searchOne(engine, targetWindow = null) { const { url, method } = await buildEngineUrl(engine); if (targetWindow && !targetWindow.closed) targetWindow.location.replace(url); else { const w = window.open(url, '_blank'); if (!w) throw new Error('瀏覽器阻擋新視窗，請允許此網站開啟新分頁。'); } return { engine, method, url }; }
-async function searchSingleEngine(engine) { if (!state.image?.blob && !els.url.value.trim()) { setStatus('請先加入圖片。'); return; } const target = openBlank(); if (!target) { setStatus('瀏覽器阻擋新視窗，請允許此網站開啟新分頁。'); return; } try { const result = await searchOne(engine, target); setStatus(`${engine.name} 已開啟${result.method === 'url' ? '圖片搜尋結果' : '搜尋頁，請完成圖片上傳'}。`, true); } catch (err) { const message = err.message || `${engine.name} 開啟失敗。`; showWindowError(target, message); setStatus(message); } }
-async function runSearch(ids) { if (!ids.length) { setStatus('請至少勾選一個搜尋引擎，或直接點任一站台的「搜尋」。'); return; } if (!state.image?.blob && !els.url.value.trim()) { setStatus('請先加入圖片。'); return; } els.results.replaceChildren(); const selected = selectedEngines(ids); for (const engine of selected) { const row = document.createElement('div'); row.className = 'result'; const main = document.createElement('div'); main.className = 'result-main'; const title = document.createElement('strong'); title.textContent = engine.name; const sub = document.createElement('span'); sub.textContent = '準備中…'; main.append(title, sub); const button = document.createElement('button'); button.className = 'secondary'; button.type = 'button'; button.textContent = '開啟'; row.append(main, button); els.results.append(row); const open = async () => { const target = openBlank(); if (!target) { sub.textContent = '瀏覽器阻擋新視窗'; return; } try { const r = await searchOne(engine, target); sub.textContent = r.method === 'url' ? '已開啟圖片搜尋結果' : '已開啟搜尋頁，請上傳圖片'; } catch (err) { const message = err.message || '開啟失敗'; showWindowError(target, message); sub.textContent = message; } }; button.addEventListener('click', open); await open(); } }
+async function searchSingleEngine(engine) {
+  // 手動上傳型站台本身不需要 Image Search Hub 的圖片，直接跳轉即可。
+  if (engine.mode === 'manual') {
+    const target = openBlank();
+    if (!target) { setStatus('瀏覽器阻擋新視窗，請允許此網站開啟新分頁。'); return; }
+    try {
+      const result = await searchOne(engine, target);
+      setStatus(`${engine.name} 已開啟搜尋頁，請在該站台自行上傳圖片。`, true);
+    } catch (err) {
+      const message = err.message || `${engine.name} 開啟失敗。`;
+      showWindowError(target, message);
+      setStatus(message);
+    }
+    return;
+  }
+  if (!state.image?.blob && !els.url.value.trim()) { setStatus('請先加入圖片。'); return; }
+  const target = openBlank(); if (!target) { setStatus('瀏覽器阻擋新視窗，請允許此網站開啟新分頁。'); return; }
+  try { const result = await searchOne(engine, target); setStatus(`${engine.name} 已開啟${result.method === 'url' ? '圖片搜尋結果' : '搜尋頁，請完成圖片上傳'}。`, true); } catch (err) { const message = err.message || `${engine.name} 開啟失敗。`; showWindowError(target, message); setStatus(message); }
+}
+async function runSearch(ids) { if (!ids.length) { setStatus('請至少勾選一個搜尋引擎，或直接點任一站台的「搜尋」。'); return; } if (!state.image?.blob && !els.url.value.trim() && selectedEngines(ids).some(e => e.mode === 'url')) { setStatus('目前勾選的引擎中有需要圖片 URL 的站台，請先加入圖片。手動上傳型站台仍可直接開啟。'); return; } els.results.replaceChildren(); const selected = selectedEngines(ids); for (const engine of selected) { const row = document.createElement('div'); row.className = 'result'; const main = document.createElement('div'); main.className = 'result-main'; const title = document.createElement('strong'); title.textContent = engine.name; const sub = document.createElement('span'); sub.textContent = '準備中…'; main.append(title, sub); const button = document.createElement('button'); button.className = 'secondary'; button.type = 'button'; button.textContent = '開啟'; row.append(main, button); els.results.append(row); const open = async () => { const target = openBlank(); if (!target) { sub.textContent = '瀏覽器阻擋新視窗'; return; } try { const r = await searchOne(engine, target); sub.textContent = r.method === 'url' ? '已開啟圖片搜尋結果' : '已開啟搜尋頁，請上傳圖片'; } catch (err) { const message = err.message || '開啟失敗'; showWindowError(target, message); sub.textContent = message; } }; button.addEventListener('click', open); await open(); } }
 els.pick.addEventListener('click', e => { e.stopPropagation(); els.file.click(); });
 els.paste.addEventListener('click', e => { e.stopPropagation(); pasteImageFromClipboard(); });
 els.drop.addEventListener('click', e => { if (e.target === els.drop || e.target.closest('.empty-state')) els.file.click(); });
