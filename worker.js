@@ -3,11 +3,11 @@ const TTL_SECONDS = 10 * 60;
 const TTL_MS = TTL_SECONDS * 1000;
 
 export default {
-  async fetch(request, env, ctx) {
+  async fetch(request, env) {
     const url = new URL(request.url);
 
     if (url.pathname === '/api/image') {
-      if (request.method === 'POST') return uploadImage(request, ctx);
+      if (request.method === 'POST') return uploadImage(request);
       return json({ error: 'Method not allowed' }, 405);
     }
 
@@ -23,7 +23,7 @@ export default {
   },
 };
 
-async function uploadImage(request, ctx) {
+async function uploadImage(request) {
   const type = request.headers.get('content-type') || '';
   if (!type.startsWith('image/')) return json({ error: 'Only image/* uploads are accepted.' }, 415);
 
@@ -48,7 +48,9 @@ async function uploadImage(request, ctx) {
     },
   });
 
-  ctx.waitUntil(caches.default.put(cacheRequest, response.clone()));
+  // Wait for the cache write before returning the public URL. This prevents
+  // Bing/Google/etc. from fetching the URL during the small put() race window.
+  await caches.default.put(cacheRequest, response);
   return json({ url: imageUrl.toString(), expiresAt });
 }
 
