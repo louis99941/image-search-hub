@@ -6,7 +6,7 @@
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/louis99941/image-search-hub)
 
-> 一鍵部署按鈕使用 Cloudflare Workers 的官方 Deploy to Cloudflare flow。Cloudflare 目前的官方按鈕支援 Workers，不支援 Pages；本 repo 已同時提供 Workers Static Assets + Worker API 部署模式。citeturn198294view0
+> 一鍵部署按鈕使用 Cloudflare Workers 的官方 Deploy to Cloudflare flow。Cloudflare 目前的官方按鈕支援 Workers，不支援 Pages；本 repo 已同時提供 Workers Static Assets + Worker API 部署模式。
 
 ## V1
 
@@ -29,22 +29,22 @@ URL 型引擎使用短期圖片 URL 啟動搜尋；不支援穩定 URL 啟動的
 
 ## 一鍵部署
 
-點擊上方 **Deploy to Cloudflare** 後，Cloudflare 會讀取 repo 的 Wrangler 設定，建立 Worker，並處理設定裡宣告的 Cloudflare 資源；此 repo 宣告 `IMAGE_BUCKET` R2 binding。Cloudflare 官方文件目前列明 R2 可由 Deploy flow 自動 provision / bind。citeturn198294view0
+點擊上方 **Deploy to Cloudflare** 後，Cloudflare 會讀取 repo 的 Wrangler 設定，建立 Worker，並處理設定裡宣告的 Cloudflare 資源；此 repo 宣告 `IMAGE_BUCKET` R2 binding。
 
 部署時：
 
 1. 選擇你的 GitHub 帳號與 repository。
 2. 設定 Worker 名稱與 R2 bucket 名稱（預設 `image-search-hub-temp`）。
 3. 完成部署後，Worker 同時提供網站與 `/api/image` API。
-4. 後續推送到 production branch 可透過 Workers Builds 持續部署。citeturn994005search2turn994005search3
+4. 後續推送到 production branch 可透過 Workers Builds 持續部署。
 
-**注意：repo 必須是 public 才能使用 Cloudflare 官方 Deploy to Cloudflare button。**citeturn198294view0
+**注意：repo 必須是 public 才能使用 Cloudflare 官方 Deploy to Cloudflare button。**
 
 ## Cloudflare Pages
 
-如果你仍然要使用 Pages，也可以用原本的 `functions/` 目錄與 Pages Git integration。Cloudflare Pages 支援把 GitHub repository 連接到 Pages，之後 push 到 production branch 會自動部署。citeturn289971search1turn289971search2
+如果你仍然要使用 Pages，也可以用原本的 `functions/` 目錄與 Pages Git integration。Cloudflare Pages 支援把 GitHub repository 連接到 Pages，之後 push 到 production branch 會自動部署。
 
-Pages 的 R2 binding 仍需在 Cloudflare Dashboard → Workers & Pages → 該 Pages project → Settings → Bindings → R2 bucket 綁定。citeturn639725search3
+Pages 的 R2 binding 仍需在 Cloudflare Dashboard → Workers & Pages → 該 Pages project → Settings → Bindings → R2 bucket 綁定。
 
 ## R2 自動清理
 
