@@ -1,6 +1,7 @@
 import { engines, selectedEngines } from './engines/registry.js';
 import { normalizeImage, rotateImage } from './image/processor.js';
 
+const CORE_ENGINE_IDS = new Set(['sogou', 'google', 'bing', 'tineye', 'baidu', 'yandex']);
 const state = { original: null, image: null, objectUrl: null, remoteUrl: null, remoteExpiresAt: 0, cleanupTimer: null };
 const $ = id => document.getElementById(id);
 const els = {
@@ -19,155 +20,34 @@ function initTheme() {
 }
 
 function renderEngines() {
-  els.grid.replaceChildren(...engines.map((e, i) => {
-    const card = document.createElement('div');
-    card.className = 'engine';
-    const top = document.createElement('div');
-    top.className = 'engine-top';
-    const label = document.createElement('label');
-    label.className = 'engine-check';
-    label.innerHTML = `<input type="checkbox" data-engine="${e.id}" ${i < 4 ? 'checked' : ''}><span>加入全部搜尋</span>`;
-    const search = document.createElement('button');
-    search.className = 'primary engine-search';
-    search.type = 'button';
-    search.textContent = '搜尋';
-    search.dataset.engineSearch = e.id;
+  els.grid.replaceChildren(...engines.map(e => {
+    const card = document.createElement('div'); card.className = 'engine';
+    const top = document.createElement('div'); top.className = 'engine-top';
+    const label = document.createElement('label'); label.className = 'engine-check';
+    label.innerHTML = `<input type="checkbox" data-engine="${e.id}" ${CORE_ENGINE_IDS.has(e.id) ? 'checked' : ''}><span>加入全部搜尋</span>`;
+    const search = document.createElement('button'); search.className = 'primary engine-search'; search.type = 'button'; search.textContent = '搜尋'; search.dataset.engineSearch = e.id;
     top.append(label, search);
-    const body = document.createElement('div');
-    body.className = 'engine-body';
+    const body = document.createElement('div'); body.className = 'engine-body';
     body.innerHTML = `<div class="engine-title"><strong>${e.name}</strong><span class="badge">${e.badge}</span></div><span class="engine-desc">${e.description}</span><span class="mode">${e.mode === 'url' ? '⚡ 圖片 URL 可直接啟動' : '↗ 開啟網站後手動上傳'}</span>`;
-    card.append(top, body);
-    return card;
-  }));
-  updateHint();
+    card.append(top, body); return card;
+  })); updateHint();
 }
-
 function checkedIds() { return [...els.grid.querySelectorAll('input[data-engine]:checked')].map(x => x.dataset.engine); }
 function updateHint() { const n = checkedIds().length; els.hint.textContent = n ? `已選 ${n} 個引擎。可直接點任一站台的「搜尋」，或使用下面的全部搜尋。` : '目前未勾選全部搜尋的引擎；仍可直接點單一站台的「搜尋」。'; }
 function setStatus(text, ok = false) { els.status.textContent = text; els.status.dataset.ok = ok ? '1' : '0'; }
 function releasePreviewUrl() { if (state.objectUrl) URL.revokeObjectURL(state.objectUrl); state.objectUrl = null; }
-
-async function deleteRemote() {
-  if (!state.remoteUrl) return;
-  const remote = state.remoteUrl;
-  state.remoteUrl = null; state.remoteExpiresAt = 0;
-  if (state.cleanupTimer) { clearTimeout(state.cleanupTimer); state.cleanupTimer = null; }
-  try { await fetch(remote, { method: 'DELETE', keepalive: true }); } catch {}
-}
-
-function scheduleRemoteCleanup() {
-  if (state.cleanupTimer) clearTimeout(state.cleanupTimer);
-  if (!state.remoteUrl) return;
-  const delay = Math.max(5_000, state.remoteExpiresAt - Date.now() + 1_000);
-  state.cleanupTimer = setTimeout(() => { deleteRemote(); }, delay);
-}
-
-async function setImage(file, name = file?.name) {
-  if (!(file instanceof Blob) || !file.type?.startsWith('image/')) { setStatus('請選擇有效的圖片檔。'); return; }
-  try {
-    setStatus('正在處理圖片…'); await deleteRemote();
-    state.original = file; state.image = await normalizeImage(file);
-    releasePreviewUrl(); state.objectUrl = URL.createObjectURL(state.image.blob);
-    els.preview.src = state.objectUrl; els.name.textContent = name || '貼上的圖片';
-    els.info.textContent = `${state.image.width} × ${state.image.height} · WebP · 本機處理`;
-    els.empty.classList.add('hidden'); els.previewState.classList.remove('hidden'); els.clear.classList.remove('hidden');
-    setStatus('圖片已準備完成。', true);
-  } catch (err) { setStatus(err.message || '圖片處理失敗。'); }
-}
-
-async function clearImage() {
-  await deleteRemote(); state.original = null; state.image = null; releasePreviewUrl();
-  els.preview.removeAttribute('src'); els.empty.classList.remove('hidden'); els.previewState.classList.add('hidden'); els.clear.classList.add('hidden');
-  setStatus('');
-}
-
-async function pasteImageFromClipboard() {
-  if (!window.isSecureContext) { setStatus('iPhone 剪貼簿功能需要 HTTPS 網站。'); return; }
-  if (!navigator.clipboard?.read) { setStatus('目前瀏覽器不提供圖片剪貼簿讀取，請改用「選擇圖片」。'); return; }
-  try {
-    setStatus('正在讀取剪貼簿…');
-    const items = await navigator.clipboard.read();
-    for (const item of items) {
-      const imageType = item.types.find(type => type.startsWith('image/'));
-      if (imageType) { const blob = await item.getType(imageType); await setImage(blob, 'Clipboard image'); return; }
-    }
-    setStatus('剪貼簿目前沒有圖片。先在照片 App 複製圖片，再回到這裡按一次按鈕。');
-  } catch (err) {
-    setStatus(err?.name === 'NotAllowedError' ? '瀏覽器拒絕剪貼簿權限。請允許此網站讀取剪貼簿，或改用「選擇圖片」。' : '無法讀取剪貼簿中的圖片，請改用「選擇圖片」。');
-  }
-}
-
-async function loadFromUrl() {
-  const url = els.url.value.trim();
-  if (!/^https?:\/\//i.test(url)) { setStatus('請輸入 http:// 或 https:// 的圖片網址。'); return; }
-  try {
-    setStatus('正在下載圖片到瀏覽器…');
-    const r = await fetch(url, { mode: 'cors' });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    const b = await r.blob(); await setImage(b, url.split('/').pop()?.split('?')[0] || 'URL image');
-  } catch { setStatus('此圖片網址無法由瀏覽器讀取，可能是 CORS 或防盜鏈。你仍可直接用這個 URL 啟動支援 URL 的搜尋引擎。'); }
-}
-
-async function ensureRemoteUrl() {
-  if (state.remoteUrl && Date.now() < state.remoteExpiresAt - 30_000) return state.remoteUrl;
-  if (!state.image?.blob) return els.url.value.trim();
-  setStatus('正在建立短期暫存圖片 URL…');
-  const r = await fetch('/api/image', { method: 'POST', headers: { 'content-type': state.image.blob.type || 'image/webp' }, body: state.image.blob });
-  if (!r.ok) throw new Error('Cloudflare 暫存圖片服務發生錯誤，請稍後再試。');
-  const data = await r.json(); state.remoteUrl = data.url; state.remoteExpiresAt = data.expiresAt || Date.now() + 9 * 60 * 1000;
-  scheduleRemoteCleanup(); setStatus('暫存 URL 已建立。', true); return state.remoteUrl;
-}
-
+async function deleteRemote() { if (!state.remoteUrl) return; const remote = state.remoteUrl; state.remoteUrl = null; state.remoteExpiresAt = 0; if (state.cleanupTimer) { clearTimeout(state.cleanupTimer); state.cleanupTimer = null; } try { await fetch(remote, { method: 'DELETE', keepalive: true }); } catch {} }
+function scheduleRemoteCleanup() { if (state.cleanupTimer) clearTimeout(state.cleanupTimer); if (!state.remoteUrl) return; const delay = Math.max(5_000, state.remoteExpiresAt - Date.now() + 1_000); state.cleanupTimer = setTimeout(() => { deleteRemote(); }, delay); }
+async function setImage(file, name = file?.name) { if (!(file instanceof Blob) || !file.type?.startsWith('image/')) { setStatus('請選擇有效的圖片檔。'); return; } try { setStatus('正在處理圖片…'); await deleteRemote(); state.original = file; state.image = await normalizeImage(file); releasePreviewUrl(); state.objectUrl = URL.createObjectURL(state.image.blob); els.preview.src = state.objectUrl; els.name.textContent = name || '貼上的圖片'; els.info.textContent = `${state.image.width} × ${state.image.height} · WebP · 本機處理`; els.empty.classList.add('hidden'); els.previewState.classList.remove('hidden'); els.clear.classList.remove('hidden'); setStatus('圖片已準備完成。', true); } catch (err) { setStatus(err.message || '圖片處理失敗。'); } }
+async function clearImage() { await deleteRemote(); state.original = null; state.image = null; releasePreviewUrl(); els.preview.removeAttribute('src'); els.empty.classList.remove('hidden'); els.previewState.classList.add('hidden'); els.clear.classList.add('hidden'); setStatus(''); }
+async function pasteImageFromClipboard() { if (!window.isSecureContext) { setStatus('iPhone 剪貼簿功能需要 HTTPS 網站。'); return; } if (!navigator.clipboard?.read) { setStatus('目前瀏覽器不提供圖片剪貼簿讀取，請改用「選擇圖片」。'); return; } try { setStatus('正在讀取剪貼簿…'); const items = await navigator.clipboard.read(); for (const item of items) { const imageType = item.types.find(type => type.startsWith('image/')); if (imageType) { const blob = await item.getType(imageType); await setImage(blob, 'Clipboard image'); return; } } setStatus('剪貼簿目前沒有圖片。先在照片 App 複製圖片，再回到這裡按一次按鈕。'); } catch (err) { setStatus(err?.name === 'NotAllowedError' ? '瀏覽器拒絕剪貼簿權限。請允許此網站讀取剪貼簿，或改用「選擇圖片」。' : '無法讀取剪貼簿中的圖片，請改用「選擇圖片」。'); } }
+async function loadFromUrl() { const url = els.url.value.trim(); if (!/^https?:\/\//i.test(url)) { setStatus('請輸入 http:// 或 https:// 的圖片網址。'); return; } try { setStatus('正在下載圖片到瀏覽器…'); const r = await fetch(url, { mode: 'cors' }); if (!r.ok) throw new Error(`HTTP ${r.status}`); const b = await r.blob(); await setImage(b, url.split('/').pop()?.split('?')[0] || 'URL image'); } catch { setStatus('此圖片網址無法由瀏覽器讀取，可能是 CORS 或防盜鏈。你仍可直接用這個 URL 啟動支援 URL 的搜尋引擎。'); } }
+async function ensureRemoteUrl() { if (state.remoteUrl && Date.now() < state.remoteExpiresAt - 30_000) return state.remoteUrl; if (!state.image?.blob) return els.url.value.trim(); setStatus('正在建立短期暫存圖片 URL…'); const r = await fetch('/api/image', { method: 'POST', headers: { 'content-type': state.image.blob.type || 'image/webp' }, body: state.image.blob }); if (!r.ok) throw new Error('Cloudflare 暫存圖片服務發生錯誤，請稍後再試。'); const data = await r.json(); state.remoteUrl = data.url; state.remoteExpiresAt = data.expiresAt || Date.now() + 9 * 60 * 1000; scheduleRemoteCleanup(); setStatus('暫存 URL 已建立。', true); return state.remoteUrl; }
 function openBlank() { return window.open('about:blank', '_blank'); }
-
-async function buildEngineUrl(engine) {
-  if (engine.mode !== 'url') return { url: engine.buildManualUrl(), method: 'manual' };
-  const source = await ensureRemoteUrl();
-  if (!source) throw new Error('沒有可用的圖片 URL。');
-  return { url: engine.buildUrl(source), method: 'url' };
-}
-
-async function searchOne(engine, targetWindow = null) {
-  const { url, method } = await buildEngineUrl(engine);
-  if (targetWindow && !targetWindow.closed) targetWindow.location.replace(url);
-  else { const w = window.open(url, '_blank'); if (!w) throw new Error('瀏覽器阻擋新視窗，請允許此網站開啟新分頁。'); }
-  return { engine, method, url };
-}
-
-async function searchSingleEngine(engine) {
-  if (!state.image?.blob && !els.url.value.trim()) { setStatus('請先加入圖片。'); return; }
-  const target = openBlank();
-  if (!target) { setStatus('瀏覽器阻擋新視窗，請允許此網站開啟新分頁。'); return; }
-  try {
-    const result = await searchOne(engine, target);
-    setStatus(`${engine.name} 已開啟${result.method === 'url' ? '圖片搜尋結果' : '搜尋頁，請完成圖片上傳'}。`, true);
-  } catch (err) {
-    try { target.close(); } catch {}
-    setStatus(err.message || `${engine.name} 開啟失敗。`);
-  }
-}
-
-async function runSearch(ids) {
-  if (!ids.length) { setStatus('請至少勾選一個搜尋引擎，或直接點任一站台的「搜尋」。'); return; }
-  if (!state.image?.blob && !els.url.value.trim()) { setStatus('請先加入圖片。'); return; }
-  els.results.replaceChildren();
-  const selected = selectedEngines(ids);
-  for (const engine of selected) {
-    const row = document.createElement('div'); row.className = 'result';
-    const main = document.createElement('div'); main.className = 'result-main';
-    const title = document.createElement('strong'); title.textContent = engine.name; const sub = document.createElement('span'); sub.textContent = '準備中…'; main.append(title, sub);
-    const button = document.createElement('button'); button.className = 'secondary'; button.type = 'button'; button.textContent = '開啟';
-    row.append(main, button); els.results.append(row);
-    const open = async () => {
-      const target = openBlank();
-      if (!target) { sub.textContent = '瀏覽器阻擋新視窗'; return; }
-      try { const r = await searchOne(engine, target); sub.textContent = r.method === 'url' ? '已開啟圖片搜尋結果' : '已開啟搜尋頁，請上傳圖片'; }
-      catch (err) { try { target.close(); } catch {} sub.textContent = err.message || '開啟失敗'; }
-    };
-    button.addEventListener('click', open); await open();
-  }
-}
-
+async function buildEngineUrl(engine) { if (engine.mode !== 'url') return { url: engine.buildManualUrl(), method: 'manual' }; const source = await ensureRemoteUrl(); if (!source) throw new Error('沒有可用的圖片 URL。'); return { url: engine.buildUrl(source), method: 'url' }; }
+async function searchOne(engine, targetWindow = null) { const { url, method } = await buildEngineUrl(engine); if (targetWindow && !targetWindow.closed) targetWindow.location.replace(url); else { const w = window.open(url, '_blank'); if (!w) throw new Error('瀏覽器阻擋新視窗，請允許此網站開啟新分頁。'); } return { engine, method, url }; }
+async function searchSingleEngine(engine) { if (!state.image?.blob && !els.url.value.trim()) { setStatus('請先加入圖片。'); return; } const target = openBlank(); if (!target) { setStatus('瀏覽器阻擋新視窗，請允許此網站開啟新分頁。'); return; } try { const result = await searchOne(engine, target); setStatus(`${engine.name} 已開啟${result.method === 'url' ? '圖片搜尋結果' : '搜尋頁，請完成圖片上傳'}。`, true); } catch (err) { try { target.close(); } catch {} setStatus(err.message || `${engine.name} 開啟失敗。`); } }
+async function runSearch(ids) { if (!ids.length) { setStatus('請至少勾選一個搜尋引擎，或直接點任一站台的「搜尋」。'); return; } if (!state.image?.blob && !els.url.value.trim()) { setStatus('請先加入圖片。'); return; } els.results.replaceChildren(); const selected = selectedEngines(ids); for (const engine of selected) { const row = document.createElement('div'); row.className = 'result'; const main = document.createElement('div'); main.className = 'result-main'; const title = document.createElement('strong'); title.textContent = engine.name; const sub = document.createElement('span'); sub.textContent = '準備中…'; main.append(title, sub); const button = document.createElement('button'); button.className = 'secondary'; button.type = 'button'; button.textContent = '開啟'; row.append(main, button); els.results.append(row); const open = async () => { const target = openBlank(); if (!target) { sub.textContent = '瀏覽器阻擋新視窗'; return; } try { const r = await searchOne(engine, target); sub.textContent = r.method === 'url' ? '已開啟圖片搜尋結果' : '已開啟搜尋頁，請上傳圖片'; } catch (err) { try { target.close(); } catch {} sub.textContent = err.message || '開啟失敗'; } }; button.addEventListener('click', open); await open(); } }
 els.pick.addEventListener('click', e => { e.stopPropagation(); els.file.click(); });
 els.paste.addEventListener('click', e => { e.stopPropagation(); pasteImageFromClipboard(); });
 els.drop.addEventListener('click', e => { if (e.target === els.drop || e.target.closest('.empty-state')) els.file.click(); });
