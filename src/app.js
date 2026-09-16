@@ -1,7 +1,7 @@
 import { engines, selectedEngines } from './engines/registry.js';
 import { normalizeImage, rotateImage } from './image/processor.js';
 
-const CORE_ENGINE_IDS = new Set(['sogou', 'google', 'bing', 'tineye', 'baidu', 'yandex']);
+const CORE_ENGINE_IDS = new Set(['sogou', 'google', 'tineye', 'baidu', 'yandex']);
 const state = { original: null, image: null, objectUrl: null, remoteUrl: null, remoteExpiresAt: 0, cleanupTimer: null };
 const $ = id => document.getElementById(id);
 const els = {
@@ -70,7 +70,7 @@ function openBlank() {
   if (w) {
     try {
       w.document.title = 'Image Search Hub';
-      w.document.body.innerHTML = '<div style="font:16px system-ui,sans-serif;padding:32px">正在準備圖片搜尋…</div>';
+      w.document.body.innerHTML = '<div style="font:16px system-ui,sans-serif;padding:32px">正在準備搜尋…</div>';
     } catch {}
   }
   return w;
