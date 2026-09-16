@@ -7,6 +7,7 @@ export const bing = {
   buildUrl(imageUrl) {
     if (!imageUrl) return 'https://www.bing.com/visualsearch?mkt=en-US';
     const params = new URLSearchParams({
+      FORM: 'IRSBIQ',
       cbir: 'sbi',
       iss: 'sbi',
       mkt: 'en-US',
