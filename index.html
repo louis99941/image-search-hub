@@ -20,7 +20,7 @@
       <div class="section-head"><div><h2>1. 準備圖片</h2><p>支援拖放、選檔、Ctrl/Cmd+V 貼上，以及圖片 URL。</p></div><button id="clearBtn" class="link-btn hidden" type="button">清除</button></div>
       <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="拖放或選擇圖片">
         <input id="fileInput" type="file" accept="image/*,.heic,.heif" hidden>
-        <div id="emptyState" class="empty-state"><div class="upload-icon">↑</div><strong>拖放圖片到這裡</strong><span>或</span><button id="pickBtn" class="primary" type="button">選擇圖片</button><small>也可以直接按 Ctrl+V / Cmd+V</small></div>
+        <div id="emptyState" class="empty-state"><div class="upload-icon">↑</div><strong>拖放圖片到這裡</strong><span>或</span><button id="pickBtn" class="primary" type="button">選擇圖片</button><button id="pasteBtn" class="secondary paste-btn" type="button">從剪貼簿貼上圖片</button><small>iPhone / iPad 建議使用上面的剪貼簿按鈕</small></div>
         <div id="previewState" class="preview-state hidden"><img id="preview" alt="待搜尋圖片預覽"><div class="preview-meta"><strong id="imageName">圖片</strong><span id="imageInfo">—</span><div class="toolbar"><button id="rotateLeft" class="secondary" type="button">↶ 旋轉</button><button id="rotateRight" class="secondary" type="button">↷ 旋轉</button><button id="resetBtn" class="secondary" type="button">重設</button></div></div></div>
       </div>
       <div class="url-row"><input id="urlInput" type="url" placeholder="貼上圖片 URL，例如 https://example.com/photo.jpg"><button id="loadUrl" class="secondary" type="button">載入 URL</button></div>
