@@ -1,21 +1,20 @@
 const MAX_BYTES = 12 * 1024 * 1024;
 const TTL_SECONDS = 10 * 60;
-const TTL_MS = TTL_SECONDS * 1000;
 
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
     if (url.pathname === '/api/image') {
-      if (request.method === 'POST') return uploadImage(request);
+      if (request.method === 'POST') return uploadImage(request, env);
       return json({ error: 'Method not allowed' }, 405);
     }
 
     if (url.pathname.startsWith('/api/image/')) {
       const id = url.pathname.slice('/api/image/'.length);
       if (!isValidId(id)) return new Response('Not found', { status: 404 });
-      if (request.method === 'GET') return getImage(request);
-      if (request.method === 'DELETE') return deleteImage(request);
+      if (request.method === 'GET') return getImage(request, env);
+      if (request.method === 'DELETE') return deleteImage(request, env);
       return json({ error: 'Method not allowed' }, 405);
     }
 
@@ -23,7 +22,7 @@ export default {
   },
 };
 
-async function uploadImage(request) {
+async function uploadImage(request, env) {
   const type = request.headers.get('content-type') || '';
   if (!type.startsWith('image/')) return json({ error: 'Only image/* uploads are accepted.' }, 415);
 
@@ -34,41 +33,47 @@ async function uploadImage(request) {
   if (body.byteLength > MAX_BYTES) return json({ error: 'Image exceeds the 12 MB limit.' }, 413);
 
   const id = crypto.randomUUID();
-  const expiresAt = Date.now() + TTL_MS;
-  const imageUrl = new URL(`/api/image/${id}`, request.url);
-  const cacheRequest = new Request(imageUrl.toString(), { method: 'GET' });
-  const response = new Response(body, {
-    headers: {
-      'content-type': type,
-      'cache-control': `public, max-age=${TTL_SECONDS}, s-maxage=${TTL_SECONDS}`,
-      'x-content-type-options': 'nosniff',
-      'cross-origin-resource-policy': 'cross-origin',
-      'content-length': String(body.byteLength),
-      'x-image-expires-at': String(expiresAt),
+  const expiresAt = Date.now() + TTL_SECONDS * 1000;
+
+  await env.IMAGE_KV.put(`image:${id}`, body, {
+    expirationTtl: TTL_SECONDS,
+    metadata: {
+      contentType: type,
+      expiresAt,
     },
   });
 
-  // Wait for the cache write before returning the public URL. This prevents
-  // Bing/Google/etc. from fetching the URL during the small put() race window.
-  await caches.default.put(cacheRequest, response);
+  const imageUrl = new URL(`/api/image/${id}`, request.url);
   return json({ url: imageUrl.toString(), expiresAt });
 }
 
-async function getImage(request) {
-  const cached = await caches.default.match(new Request(request.url, { method: 'GET' }));
-  if (!cached) return new Response('Not found or expired', { status: 404 });
+async function getImage(request, env) {
+  const id = new URL(request.url).pathname.slice('/api/image/'.length);
+  const result = await env.IMAGE_KV.getWithMetadata(`image:${id}`, { type: 'arrayBuffer' });
 
-  const expiresAt = Number(cached.headers.get('x-image-expires-at') || 0);
+  if (result.value === null) return new Response('Not found or expired', { status: 404 });
+
+  const metadata = result.metadata || {};
+  const expiresAt = Number(metadata.expiresAt || 0);
   if (expiresAt && Date.now() >= expiresAt) {
-    await caches.default.delete(new Request(request.url, { method: 'GET' }));
+    await env.IMAGE_KV.delete(`image:${id}`);
     return new Response('Expired', { status: 410 });
   }
-  return cached;
+
+  return new Response(result.value, {
+    headers: {
+      'content-type': metadata.contentType || 'image/webp',
+      'cache-control': 'public, max-age=600, s-maxage=600',
+      'x-content-type-options': 'nosniff',
+      'cross-origin-resource-policy': 'cross-origin',
+    },
+  });
 }
 
-async function deleteImage(request) {
-  const deleted = await caches.default.delete(new Request(request.url, { method: 'GET' }));
-  return new Response(null, { status: deleted ? 204 : 404 });
+async function deleteImage(request, env) {
+  const id = new URL(request.url).pathname.slice('/api/image/'.length);
+  await env.IMAGE_KV.delete(`image:${id}`);
+  return new Response(null, { status: 204 });
 }
 
 function isValidId(id) {
