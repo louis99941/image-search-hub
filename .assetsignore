@@ -1,0 +1,5 @@
+worker.js
+functions/
+r2-lifecycle.json
+wrangler.toml
+README.md
