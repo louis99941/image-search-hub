@@ -1,0 +1,11 @@
+{
+  "name": "Image Search Hub",
+  "short_name": "Image Search Hub",
+  "description": "一次準備圖片，快速開啟多個反向圖片搜尋引擎。",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b1120",
+  "theme_color": "#0f172a",
+  "lang": "zh-Hant",
+  "icons": []
+}
