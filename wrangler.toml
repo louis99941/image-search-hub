@@ -5,12 +5,5 @@ compatibility_date = "2026-09-16"
 [assets]
 directory = "."
 
-[triggers]
-crons = ["*/10 * * * *"]
-
-[[r2_buckets]]
-binding = "IMAGE_BUCKET"
-bucket_name = "image-search-hub-temp"
-
 [vars]
-# Temporary images are intended to live for 10 minutes.
+# Temporary images use the Workers Cache API for 10 minutes.
