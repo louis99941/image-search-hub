@@ -1,13 +1,11 @@
 export const bing = {
   id: 'bing',
   name: 'Bing Visual Search',
-  badge: '核心',
-  description: 'Bing 視覺搜尋；使用圖片 URL 直接進入以圖搜圖。',
-  mode: 'url',
-  buildUrl(imageUrl) {
-    if (!imageUrl) return 'https://www.bing.com/visualsearch';
-    const q = `imgurl:${imageUrl}`;
-    return `https://www.bing.com/images/search?view=detailv2&iss=sbi&FORM=SBIIDP&sbisrc=UrlPaste&idpbck=1&q=${encodeURIComponent(q)}`;
+  badge: '暫停自動搜尋',
+  description: 'Bing 目前保留官方 Visual Search 頁面，暫不使用不穩定的自動帶圖 URL。',
+  mode: 'manual',
+  buildUrl() {
+    return 'https://www.bing.com/visualsearch';
   },
   buildManualUrl() {
     return 'https://www.bing.com/visualsearch';
