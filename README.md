@@ -1,53 +1,74 @@
 # Image Search Hub
 
+![Image Search Hub](https://img.shields.io/badge/Image%20Search-Hub-111827?style=for-the-badge)
+
 一次準備圖片，集中開啟多個反向圖片搜尋引擎。
 
-## V1 foundation
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/louis99941/image-search-hub)
+
+> 一鍵部署按鈕使用 Cloudflare Workers 的官方 Deploy to Cloudflare flow。Cloudflare 目前的官方按鈕支援 Workers，不支援 Pages；本 repo 已同時提供 Workers Static Assets + Worker API 部署模式。citeturn198294view0
+
+## V1
 
 - 拖放、檔案選擇、Ctrl/Cmd+V 貼上圖片
 - 圖片 URL 輸入
 - 瀏覽器端縮放、WebP 正規化、去除原始 EXIF
-- 旋轉與重設
+- 手動旋轉與重設；**不自動裁切**
 - Google Lens、Bing Visual Search、Yandex Images、TinEye、Lenso.ai、Copyseeker adapters
 - Search Selected / Search All
 - 深色模式
-- 不建立本機或雲端搜尋歷史
-- Cloudflare Pages Functions + R2 十分鐘暫存 URL
-- 暫存圖片主動刪除 + R2 lifecycle 自動清理保險
+- **不建立本機或雲端搜尋歷史**
+- Cloudflare Worker + Static Assets
+- R2 十分鐘暫存 URL
+- 換圖、清除、頁面離開時主動刪除暫存物件
+- Worker 每 10 分鐘定期掃描並刪除逾期物件
 
 ## 搜尋策略
 
-URL 型引擎使用短期公開圖片 URL 啟動搜尋；不支援穩定 URL 啟動的引擎則開啟官方搜尋頁，讓使用者自行完成上傳。這個策略刻意避免依賴網站私有 API、CAPTCHA 或容易變動的頁面 DOM。
+URL 型引擎使用短期圖片 URL 啟動搜尋；不支援穩定 URL 啟動的引擎則開啟官方搜尋頁，讓使用者自行完成上傳。刻意避免依賴網站私有 API、CAPTCHA 或容易變動的頁面 DOM。
+
+## 一鍵部署
+
+點擊上方 **Deploy to Cloudflare** 後，Cloudflare 會讀取 repo 的 Wrangler 設定，建立 Worker，並處理設定裡宣告的 Cloudflare 資源；此 repo 宣告 `IMAGE_BUCKET` R2 binding。Cloudflare 官方文件目前列明 R2 可由 Deploy flow 自動 provision / bind。citeturn198294view0
+
+部署時：
+
+1. 選擇你的 GitHub 帳號與 repository。
+2. 設定 Worker 名稱與 R2 bucket 名稱（預設 `image-search-hub-temp`）。
+3. 完成部署後，Worker 同時提供網站與 `/api/image` API。
+4. 後續推送到 production branch 可透過 Workers Builds 持續部署。citeturn994005search2turn994005search3
+
+**注意：repo 必須是 public 才能使用 Cloudflare 官方 Deploy to Cloudflare button。**citeturn198294view0
 
 ## Cloudflare Pages
 
-1. 在 Cloudflare Pages 連接此 GitHub repository。
-2. Build command 留空，Build output directory 使用 `/`。
-3. 建立 R2 bucket：`image-search-hub-temp`，或修改 `wrangler.toml` 的 bucket name。
-4. 確認 Pages Functions 可取得 `IMAGE_BUCKET` R2 binding。
-5. 部署後，`POST /api/image` 會建立 `temporary/` 下的暫存物件，`GET /api/image/:id` 會在期限到期後拒絕提供。
+如果你仍然要使用 Pages，也可以用原本的 `functions/` 目錄與 Pages Git integration。Cloudflare Pages 支援把 GitHub repository 連接到 Pages，之後 push 到 production branch 會自動部署。citeturn289971search1turn289971search2
 
-### R2 lifecycle
+Pages 的 R2 binding 仍需在 Cloudflare Dashboard → Workers & Pages → 該 Pages project → Settings → Bindings → R2 bucket 綁定。citeturn639725search3
 
-`r2-lifecycle.json` 已設定 `temporary/` prefix 的 600 秒（10 分鐘）Age expiration。Cloudflare R2 lifecycle 的 Age 條件以秒表示；物件實際刪除通常會有排程延遲，因此程式仍會在前端結束工作階段、換圖或計時到期時主動 DELETE，API 在過期後也會做 lazy deletion。citeturn467068view0
+## R2 自動清理
 
-使用 Wrangler 套用設定：
+暫存物件全部放在 `temporary/` prefix，metadata 內保存 `expiresAt`。
+
+Worker 的 Cron Trigger 每 10 分鐘執行一次清理逾期物件；API 在讀取時也會檢查期限並立即刪除過期物件。前端換圖、清除圖片與離開頁面也會盡可能主動 DELETE。
+
+`r2-lifecycle.json` 另外提供 bucket lifecycle 的 600 秒規則，供需要在 R2 bucket 層再加一道清理保險時使用。
+
+套用 lifecycle：
 
 ```bash
 npx wrangler r2 bucket lifecycle set image-search-hub-temp --file r2-lifecycle.json
 ```
 
-也可以在 Cloudflare Dashboard → R2 → 該 bucket → Settings → Object Lifecycle Rules 檢查規則。Cloudflare 文件指出 lifecycle 是 bucket 層級設定，物件通常會在到期後於 24 小時內被移除。citeturn967340search0
-
 ## 開發
 
-這是一個無 bundler 的 ES module 專案，可以直接在靜態伺服器上預覽。需要 Cloudflare Pages Functions + R2 時，使用 Wrangler 或 Cloudflare Dashboard 部署。
+這是一個無 bundler 的 ES module 專案。純前端內容可直接用任何靜態伺服器預覽；啟用圖片 URL 暫存功能時，需要 Cloudflare Worker + R2。
 
 ## 目前限制
 
-- 本地檔案的自動 URL 搜尋需要設定 R2 binding。
+- 本地檔案的自動 URL 搜尋需要 R2 binding。
 - TinEye、Lenso、Copyseeker V1 尚未模擬網站內部上傳流程。
-- 目前不包含圖片裁切、不保存搜尋紀錄、不建立帳號或雲端歷史。
+- 不包含圖片裁切、不保存搜尋紀錄、不建立帳號或雲端歷史。
 
 ## Roadmap
 
