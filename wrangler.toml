@@ -5,5 +5,9 @@ compatibility_date = "2026-09-16"
 [assets]
 directory = "."
 
+[[kv_namespaces]]
+binding = "IMAGE_KV"
+id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
+
 [vars]
-# Temporary images use the Workers Cache API for 10 minutes.
+# Temporary images are stored in Workers KV for 10 minutes.
