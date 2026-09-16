@@ -1,9 +1,16 @@
 name = "image-search-hub"
+main = "./worker.js"
 compatibility_date = "2026-09-16"
+
+[assets]
+directory = "."
+
+[triggers]
+crons = ["*/10 * * * *"]
 
 [[r2_buckets]]
 binding = "IMAGE_BUCKET"
 bucket_name = "image-search-hub-temp"
 
 [vars]
-# Temporary images expire in the application after 10 minutes.
+# Temporary images are intended to live for 10 minutes.
