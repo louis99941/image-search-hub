@@ -5,9 +5,5 @@ compatibility_date = "2026-09-16"
 [assets]
 directory = "."
 
-[[kv_namespaces]]
-binding = "IMAGE_KV"
-id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
-
-[vars]
-# Temporary images are stored in Workers KV for 10 minutes.
+# IMAGE_KV is bound to this Worker in the Cloudflare dashboard.
+# Keep the namespace ID out of the repository configuration.
