@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="description" content="一次準備圖片，快速開啟多個反向圖片搜尋引擎。">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="/style.css">
+  <title>Image Search Hub</title>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div><div class="eyebrow">REVERSE IMAGE SEARCH</div><h1>Image Search Hub</h1><p class="subtitle">一次準備圖片，集中開啟多個反向圖片搜尋。</p></div>
+      <button id="themeToggle" class="icon-btn" type="button" aria-label="切換深色模式">☾</button>
+    </header>
+
+    <section class="card">
+      <div class="section-head"><div><h2>1. 準備圖片</h2><p>支援拖放、選檔、Ctrl/Cmd+V 貼上，以及圖片 URL。</p></div><button id="clearBtn" class="link-btn hidden" type="button">清除</button></div>
+      <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="拖放或選擇圖片">
+        <input id="fileInput" type="file" accept="image/*,.heic,.heif" hidden>
+        <div id="emptyState" class="empty-state"><div class="upload-icon">↑</div><strong>拖放圖片到這裡</strong><span>或</span><button id="pickBtn" class="primary" type="button">選擇圖片</button><small>也可以直接按 Ctrl+V / Cmd+V</small></div>
+        <div id="previewState" class="preview-state hidden"><img id="preview" alt="待搜尋圖片預覽"><div class="preview-meta"><strong id="imageName">圖片</strong><span id="imageInfo">—</span><div class="toolbar"><button id="rotateLeft" class="secondary" type="button">↶ 旋轉</button><button id="rotateRight" class="secondary" type="button">↷ 旋轉</button><button id="resetBtn" class="secondary" type="button">重設</button></div></div></div>
+      </div>
+      <div class="url-row"><input id="urlInput" type="url" placeholder="貼上圖片 URL，例如 https://example.com/photo.jpg"><button id="loadUrl" class="secondary" type="button">載入 URL</button></div>
+      <p id="inputStatus" class="status" aria-live="polite"></p>
+    </section>
+
+    <section class="card">
+      <div class="section-head"><div><h2>2. 選擇搜尋引擎</h2><p>每個引擎以獨立 adapter 管理，避免單一網站變更影響全部功能。</p></div><div><button id="selectAll" class="link-btn" type="button">全選</button><button id="selectNone" class="link-btn" type="button">全不選</button></div></div>
+      <div id="engineGrid" class="engine-grid"></div>
+    </section>
+
+    <section class="card">
+      <div class="section-head"><div><h2>3. 開始搜尋</h2><p id="actionHint">至少選擇一個搜尋引擎。</p></div></div>
+      <div class="action-row"><button id="searchSelected" class="primary large" type="button">搜尋已選引擎</button><button id="searchAll" class="secondary large" type="button">全部搜尋</button></div>
+      <div id="results" class="results" aria-live="polite"></div>
+    </section>
+
+    <section class="card compact"><div class="section-head"><div><h2>隱私與處理</h2><p id="privacyText">圖片預設只在瀏覽器端處理，不會因為載入而自動上傳到本專案伺服器。</p></div></div><div class="chips"><span>Local-first</span><span>EXIF stripped</span><span>JPEG/WebP normalize</span><span>Local history</span></div></section>
+
+    <footer><span>Image Search Hub · V1</span><a href="https://github.com/louis99941/image-search-hub" target="_blank" rel="noreferrer">GitHub</a></footer>
+  </main>
+  <script type="module" src="/src/app.js"></script>
+</body>
+</html>
