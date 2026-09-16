@@ -5,5 +5,6 @@ compatibility_date = "2026-09-16"
 [assets]
 directory = "."
 
-# IMAGE_KV is bound to this Worker in the Cloudflare dashboard.
-# Keep the namespace ID out of the repository configuration.
+[[kv_namespaces]]
+binding = "IMAGE_KV"
+id = "828d2ae4f5b545cc9c147eff5a1626f4"
