@@ -6,9 +6,9 @@
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/louis99941/image-search-hub)
 
-> 本 repo 使用 Cloudflare Workers + Static Assets。圖片暫存改用 Workers Cache API，不需要 R2、KV、D1 或其他外部儲存。
+> 本 repo 使用 Cloudflare Workers + Static Assets。圖片暫存使用 Workers KV，不需要 R2、D1 或其他外部儲存。
 
-## V1
+## V1.1
 
 - 拖放、檔案選擇、Ctrl/Cmd+V 貼上圖片
 - 圖片 URL 輸入
@@ -19,9 +19,11 @@
 - 深色模式
 - **不建立本機或雲端搜尋歷史**
 - Cloudflare Worker + Static Assets
-- Worker Cache API 十分鐘暫存 URL
+- Worker KV 十分鐘暫存 URL
+- 上傳 API 僅接受同源請求
+- 上傳 API 每個 IP 每分鐘最多 10 次
 - 換圖、清除、頁面離開時主動刪除暫存內容
-- 暫存到期後由 Cache API TTL 自然失效
+- 暫存到期後由 KV TTL 自然失效
 
 ## 搜尋策略
 
@@ -41,12 +43,14 @@ URL 型引擎使用短期圖片 URL 啟動搜尋；不支援穩定 URL 啟動的
 
 Worker 會：
 
-1. 產生隨機 UUID。
-2. 將圖片放進 Workers Cache API。
-3. 回傳 `/api/image/<uuid>` URL。
-4. 將快取 TTL 設為 600 秒。
-5. 前端換圖、清除或離開頁面時盡可能發出 DELETE。
-6. TTL 到期後 cache miss，無法再取得圖片。
+1. 驗證請求是否來自同一個網站來源。
+2. 以 Cloudflare-Connecting-IP 做簡單的每分鐘上傳次數限制。
+3. 產生隨機 UUID。
+4. 將圖片放進 Workers KV。
+5. 回傳 `/api/image/<uuid>` URL。
+6. 將圖片 TTL 設為 600 秒。
+7. 前端換圖、清除或離開頁面時盡可能發出 DELETE。
+8. TTL 到期後 KV 自然失效，無法再取得圖片。
 
 因此這個專案本身不建立圖片資料庫、永久圖片儲存或使用者歷史紀錄。
 
@@ -62,12 +66,13 @@ npx wrangler deploy
 ## 目前限制
 
 - 本地檔案的自動 URL 搜尋需要 Cloudflare Worker 暫存 endpoint。
-- TinEye、Lenso、Copyseeker V1 尚未模擬網站內部上傳流程。
+- TinEye、Lenso、Copyseeker 尚未模擬網站內部上傳流程。
 - 不包含圖片裁切、不保存搜尋紀錄、不建立帳號或雲端歷史。
+- 簡單 rate limit 使用 KV 計數，屬於基礎防濫用措施，不是嚴格的全域流量控制。
 
 ## Roadmap
 
-V1.1：搜尋預設組、自訂搜尋引擎、更多可直接使用圖片 URL 的引擎。
+V1.2：搜尋預設組、自訂搜尋引擎、更多可直接使用圖片 URL 的引擎。
 
 V2：瀏覽器擴充功能、PWA share target、engine health monitoring。
 
