@@ -28,19 +28,19 @@
     </section>
 
     <section class="card">
-      <div class="section-head"><div><h2>2. 選擇搜尋引擎</h2><p>每個站台都可以單獨搜尋；也可以用「全部搜尋」一次開啟。</p></div><div><button id="selectAll" class="link-btn" type="button">全選</button><button id="selectNone" class="link-btn" type="button">全不選</button></div></div>
+      <div class="section-head"><div><h2>2. 選擇搜尋引擎</h2><p>依用途分類；勾選的引擎會加入「搜尋已選引擎」。</p></div><div><button id="selectAll" class="link-btn" type="button">全選</button><button id="selectNone" class="link-btn" type="button">全不選</button></div></div>
       <div id="engineGrid" class="engine-grid"></div>
     </section>
 
     <section class="card">
-      <div class="section-head"><div><h2>3. 搜尋</h2><p id="actionHint">上傳圖片後，可以直接點擊任一站台的「搜尋」。</p></div></div>
-      <div class="action-row"><button id="searchSelected" class="primary large" type="button">搜尋已選引擎</button><button id="searchAll" class="secondary large" type="button">全部搜尋</button></div>
+      <div class="section-head"><div><h2>3. 搜尋</h2><p id="actionHint">上傳圖片後，建議優先使用真人照片搜尋。</p></div></div>
+      <div class="action-row"><button id="quickPeople" class="primary large" type="button">🔍 真人照片快速搜尋</button><button id="searchSelected" class="primary large" type="button">搜尋已選引擎</button><button id="searchAll" class="secondary large" type="button">全部搜尋</button></div>
       <div id="results" class="results" aria-live="polite"></div>
     </section>
 
     <section class="card compact"><div class="section-head"><div><h2>隱私與處理</h2><p id="privacyText">圖片預設只在瀏覽器端處理；需要提供圖片 URL 給搜尋引擎時，Worker 只將圖片暫存於 Cloudflare KV，期限約 10 分鐘。上傳 API 只接受同源請求，並限制每個 IP 每分鐘最多 10 次上傳。</p></div></div><div class="chips"><span>Local-first</span><span>EXIF stripped</span><span>WebP normalize</span><span>10 min KV</span><span>10 uploads/min</span></div></section>
 
-    <footer><span>Image Search Hub · V1.1</span><a href="https://github.com/louis99941/image-search-hub" target="_blank" rel="noreferrer">GitHub</a></footer>
+    <footer><span>Image Search Hub · V1.2</span><a href="https://github.com/louis99941/image-search-hub" target="_blank" rel="noreferrer">GitHub</a></footer>
   </main>
   <script type="module" src="/src/app.js"></script>
 </body>
