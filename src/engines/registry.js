@@ -16,12 +16,21 @@ import { pimeyes } from './pimeyes.js';
 import { facecheck } from './facecheck.js';
 import { shutterstock } from './shutterstock.js';
 
-export const engines = [
+const people = new Set(['pimeyes', 'facecheck', 'google', 'yandex', 'tineye', 'lenso', 'copyseeker']);
+const anime = new Set(['saucenao', 'iqdb', 'ascii2d', 'tracemoe', 'animetrace']);
+
+const rawEngines = [
   pimeyes, facecheck,
   google, yandex, tineye, lenso, copyseeker,
   baidu, sogou, bing,
-  saucenao, iqdb, ascii2d, tracemoe, animetrace, pinterest, shutterstock
+  saucenao, iqdb, ascii2d, tracemoe, animetrace,
+  pinterest, shutterstock
 ];
+
+export const engines = rawEngines.map((engine) => ({
+  ...engine,
+  group: people.has(engine.id) ? 'people' : anime.has(engine.id) ? 'anime' : 'general',
+}));
 
 export function selectedEngines(ids) {
   return engines.filter((engine) => ids.includes(engine.id));
