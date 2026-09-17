@@ -8,19 +8,17 @@
 
 > 本 repo 使用 Cloudflare Workers + Static Assets。圖片暫存使用 Workers KV，不需要 R2、D1 或其他外部儲存。
 
-## V1.2
+## V1.3
 
-- 拖放、檔案選擇、Ctrl/Cmd+V 貼上圖片
-- 圖片 URL 輸入
-- 瀏覽器端縮放、WebP 正規化、去除原始 EXIF
-- 手動旋轉與重設；**不自動裁切**
-- 搜尋引擎依用途分成「真人照片 / 人臉」、「一般圖片」、「動漫 / 插畫」三組
-- 預設核心搜尋組：PimEyes、FaceCheck.ID、Google Lens、Yandex、TinEye、Lenso.ai、Copyseeker
-- 「真人照片快速搜尋」一鍵啟動核心真人照片搜尋組
+- V1.2 的真人照片 / 人臉、一般圖片、動漫 / 插畫三組搜尋分類
+- 真人照片快速搜尋：PimEyes、FaceCheck.ID、Google Lens、Yandex、TinEye、Lenso.ai、Copyseeker
 - 每個站台可單獨搜尋；不支援穩定 URL 啟動的站台直接開啟官方網站供使用者上傳
 - Search Selected / Search All
+- 每個搜尋引擎顯示目前啟動狀態：可啟動、已啟動、啟動失敗
+- 自動 URL 型與手動上傳型的能力狀態清楚標示
+- 搜尋引擎勾選狀態可記住在目前瀏覽器，並可一鍵恢復預設
+- 設定只使用瀏覽器 localStorage，不保存圖片或搜尋歷史
 - 深色模式
-- **不建立本機或雲端搜尋歷史**
 - Cloudflare Worker + Static Assets
 - Worker KV 十分鐘暫存 URL
 - 上傳 API 僅接受同源請求
@@ -73,11 +71,12 @@ npx wrangler deploy
 - 不包含圖片裁切、不保存搜尋紀錄、不建立帳號或雲端歷史。
 - 簡單 rate limit 使用 KV 計數，屬於基礎防濫用措施，不是嚴格的全域流量控制。
 - PimEyes、FaceCheck.ID 等人臉搜尋服務的實際使用方式與結果受各服務本身的條款、地區與反自動化機制限制。
+- V1.3 的「引擎健康狀態」是前端啟動狀態與已知能力提示，不代表遠端搜尋服務的即時可用性。
 
 ## Roadmap
 
-V1.3：搜尋啟動狀態、引擎健康狀態、搜尋組設定。
+V1.4：在官方 API 或穩定資料來源可用的前提下，加入結果聚合與來源整理。
 
-V2：瀏覽器擴充功能、PWA share target。
+V2：瀏覽器擴充功能、PWA share target、自訂搜尋組。
 
-V3：在官方 API 或穩定資料來源可用的前提下，加入結果聚合、去重與來源摘要。
+V3：在合法且穩定的資料來源前提下，加入結果去重、相似來源整理與跨引擎摘要。
