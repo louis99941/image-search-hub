@@ -25,9 +25,11 @@ function restoreSelection() {
 }
 
 function resetSelection() {
-  for (const input of getInputs()) input.checked = DEFAULT_IDS.has(input.dataset.engine);
+  for (const input of getInputs()) {
+    input.checked = DEFAULT_IDS.has(input.dataset.engine);
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+  }
   saveSelection();
-  window.dispatchEvent(new Event('ish-selection-reset'));
 }
 
 function addHealthAndStatus() {
@@ -39,7 +41,7 @@ function addHealthAndStatus() {
     const health = document.createElement('span');
     health.className = 'engine-health';
     health.dataset.state = 'ready';
-    health.textContent = input.dataset.engine ? '● 可啟動' : '●';
+    health.textContent = '● 可啟動';
     mode.append(' · ', health);
 
     const button = card.querySelector('button[data-engine-search]');
