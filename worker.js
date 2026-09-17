@@ -1,5 +1,7 @@
 const MAX_BYTES = 12 * 1024 * 1024;
 const TTL_SECONDS = 10 * 60;
+const RATE_LIMIT_WINDOW = 60;
+const RATE_LIMIT_MAX = 10;
 
 export default {
   async fetch(request, env) {
@@ -23,6 +25,26 @@ export default {
 };
 
 async function uploadImage(request, env) {
+  const origin = request.headers.get('origin');
+  const requestOrigin = new URL(request.url).origin;
+  if (origin !== requestOrigin) {
+    return json({ error: 'Uploads must come from the same site.' }, 403);
+  }
+
+  const rateLimit = await checkRateLimit(request, env);
+  if (!rateLimit.allowed) {
+    return new Response(JSON.stringify({ error: 'Too many uploads. Please try again later.' }), {
+      status: 429,
+      headers: {
+        'content-type': 'application/json; charset=utf-8',
+        'cache-control': 'no-store',
+        'retry-after': String(rateLimit.retryAfter),
+        'x-ratelimit-limit': String(RATE_LIMIT_MAX),
+        'x-ratelimit-remaining': '0',
+      },
+    });
+  }
+
   const type = request.headers.get('content-type') || '';
   if (!type.startsWith('image/')) return json({ error: 'Only image/* uploads are accepted.' }, 415);
 
@@ -44,7 +66,25 @@ async function uploadImage(request, env) {
   });
 
   const imageUrl = new URL(`/api/image/${id}`, request.url);
-  return json({ url: imageUrl.toString(), expiresAt });
+  return json({ url: imageUrl.toString(), expiresAt }, 200, {
+    'x-ratelimit-limit': String(RATE_LIMIT_MAX),
+    'x-ratelimit-remaining': String(rateLimit.remaining),
+  });
+}
+
+async function checkRateLimit(request, env) {
+  const ip = request.headers.get('cf-connecting-ip') || 'unknown';
+  const bucket = Math.floor(Date.now() / (RATE_LIMIT_WINDOW * 1000));
+  const key = `rate:${bucket}:${ip}`;
+  const count = Number(await env.IMAGE_KV.get(key) || 0);
+
+  if (count >= RATE_LIMIT_MAX) {
+    const retryAfter = RATE_LIMIT_WINDOW - Math.floor((Date.now() / 1000) % RATE_LIMIT_WINDOW);
+    return { allowed: false, remaining: 0, retryAfter };
+  }
+
+  await env.IMAGE_KV.put(key, String(count + 1), { expirationTtl: RATE_LIMIT_WINDOW + 5 });
+  return { allowed: true, remaining: Math.max(0, RATE_LIMIT_MAX - count - 1), retryAfter: 0 };
 }
 
 async function getImage(request, env) {
@@ -80,12 +120,13 @@ function isValidId(id) {
   return /^[0-9a-f-]{36}$/i.test(id);
 }
 
-function json(data, status = 200) {
+function json(data, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(data), {
     status,
     headers: {
       'content-type': 'application/json; charset=utf-8',
       'cache-control': 'no-store',
+      ...extraHeaders,
     },
   });
 }
